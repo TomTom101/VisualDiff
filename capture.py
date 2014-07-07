@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import sys
 from os import path
 import urllib
 from xml.dom import minidom
@@ -49,8 +50,9 @@ def init():
 
 	# If both or none are set, we throw an error
 	if bool(options.sitemap) == bool(options.url):
+		print("Must specify a URL OR sitemap.")
 		cmdparser.print_usage() 
-		raise RuntimeError("Must specify a URL OR sitemap.")
+		sys.exit(0)
 		
 	# if len(args) == 0:
 	# 	cmdparser.print_usage()
@@ -73,9 +75,14 @@ def main():
 	if(options.url):
 		webkit2png(options.url)
 		return
+	try:
+		dom = minidom.parse(urllib.urlopen(options.sitemap))
+		locations = dom.getElementsByTagName('loc')
+	except Exception:
+		print("Sitemap could not be parsed. Check https://support.google.com/webmasters/answer/183668")
+		sys.exit(0)
 
-	dom = minidom.parse(urllib.urlopen(options.sitemap))
-	locations = dom.getElementsByTagName('loc')
+
 	urls = []
 
 	for node in locations:
@@ -86,7 +93,7 @@ def main():
 		reg = r"\.[a-z]{2,3}/([^/]+/){,%d}$" % options.levels
 		if re.search(reg, url):
 	 		urls.append(url)
-	print "Capturing %d urls" % len(urls)
+	print "Capturing %d urls form sitemap" % len(urls)
 
 	##urls = ['http://www.integration.native-instruments.de/de/products/komplete/effects/premium-tube-series/']
 

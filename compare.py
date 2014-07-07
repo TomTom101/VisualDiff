@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import os, glob
+import sys, os, glob
 from time import sleep
 import optparse
 from SimpleCV import *
@@ -36,12 +36,14 @@ def init():
 
 	if len(args) != 2:
 	 	cmdparser.print_usage()
-	 	raise RuntimeError("Must define 2 folders to compare!")
+	 	print("You must define 2 folders to compare!")
+		sys.exit(0)
 
 	if not os.path.exists(options.output_path):
 		os.makedirs(options.output_path)
 		if not os.access(options.output_path, os.W_OK):
-			raise RuntimeError('Cannot write to output-path "%s"' % options.output_path)
+			print('Cannot write to output-path "%s"' % options.output_path)
+			sys.exit(0)
 
 def mask(imgA, imgB):
 	tmp = (imgB - imgA)
