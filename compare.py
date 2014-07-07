@@ -14,18 +14,18 @@ mismatch = []
 
 def init():
 	global options, args
-	usage = """%prog [options] [http://example.net/ ...]
+	usage = """%prog [options] ~/Screens-A ~/Screens-B
 
 	Examples:
 	%prog ~/Screens-A/ ~/Screens-B/           	# compare folder Screens-A to Screens-B
 	%prog -S --scale		# Crawl Google sitemap, <url><loc>http://</loc></url>
-	%prog -O --output-path	# Save files to specified folder, defaults to ./Screens-Mismatch"""
+	%prog -O --output-path	# Save files to specified folder, defaults to ./VisualDiff/compare/mismatches"""
 
 	cmdparser = optparse.OptionParser(usage, version=("capture " + __version__))
 
 	cmdparser.add_option("-O", "--output-path",
 						type="string",
-						default="./Screens-Mismatch",
+						default="./VisualDiff/compare/mismatches",
 						help=optparse.SUPPRESS_HELP)
 	cmdparser.add_option("-S", "--scale",
 						type="float",
@@ -33,11 +33,15 @@ def init():
 						help=optparse.SUPPRESS_HELP)
 
 	(options, args) = cmdparser.parse_args()
+
 	if len(args) != 2:
 	 	cmdparser.print_usage()
 	 	raise RuntimeError("Must define 2 folders to compare!")
 
-	print args, options
+	if not os.path.exists(options.output_path):
+		os.makedirs(options.output_path)
+		if not os.access(options.output_path, os.W_OK):
+			raise RuntimeError('Cannot write to output-path "%s"' % options.output_path)
 
 def mask(imgA, imgB):
 	tmp = (imgB - imgA)
@@ -73,7 +77,7 @@ def main():
 		previous_image_path = '%s/%s' % (args[1], current_image_name)
 
 		if (os.path.isfile(previous_image_path)):
-			print "opening current  %s..." % previous_image_path
+			print "opening current  %s..." % current_image_name
 			imgA = openImage(current_image_path).scale(options.scale)
 			print "opening previous ..."
 			imgB = openImage(previous_image_path).scale(options.scale)

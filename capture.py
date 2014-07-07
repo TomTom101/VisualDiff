@@ -19,7 +19,7 @@ def init():
 	Examples:
 	%prog http://www.native-instruments.com/   	# screengrab the live site (not supported yet)
 	%prog -S --site-map							# Crawl Google sitemap, <url><loc>http://</loc></url>
-	%prog -O --output-path						# Save files to Screens folder, defaults to ~/
+	%prog -O --output-path						# Save files to Screens folder, defaults to ./VisualDiff/capture/Screens
 	%prog -W --width							# width of the browser screen, defaults to 1280
 	%prog -L --levels							# How many url path levels to go down (/en/company/ is on level 2), defaults to 2
 	%prog -O ~/Screens/ -W 1600 -S http://www.native-instruments.de/en/sitemap/"""
@@ -28,6 +28,7 @@ def init():
 
 	cmdparser.add_option("-O", "--output-path",
 						type="string",
+						default="./VisualDiff/capture/Screens",
 						help=optparse.SUPPRESS_HELP)
 	cmdparser.add_option("-S", "--sitemap",
 						type="string",
