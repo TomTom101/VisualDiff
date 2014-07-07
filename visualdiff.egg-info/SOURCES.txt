@@ -1,0 +1,7 @@
+capture.py
+compare.py
+setup.py
+visualdiff.egg-info/PKG-INFO
+visualdiff.egg-info/SOURCES.txt
+visualdiff.egg-info/dependency_links.txt
+visualdiff.egg-info/top_level.txt
