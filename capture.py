@@ -6,6 +6,7 @@ from xml.dom import minidom
 import re
 import subprocess
 import optparse
+import urlparse as url
 
 __version__ = "0.1"
 
@@ -14,49 +15,65 @@ args = []
 
 def init():
 	global options, args
-	usage = """%prog [options] [http://example.net/ ...]
-
-	Examples:
-	%prog http://domain.com/	# screengrab the live site (not supported yet)
-	%prog -S --site-map	# Crawl Google sitemap, <url><loc>http://</loc></url>
-	%prog -O --output-path	# Save files to Screens folder, defaults to ./VisualDiff/capture/Screens
-	%prog -W --width		# width of the browser screen, defaults to 1280
-	%prog -L --levels		# How many url path levels to go down (/en/company/ is on level 2), defaults to 2
-	%prog -O ~/Screens/ -W 1600 -S http://www.native-instruments.de/en/sitemap/"""
+	usage = "%prog [options] [http://example.net/ ...]"
 
 	cmdparser = optparse.OptionParser(usage, version=("capture " + __version__))
 
 	cmdparser.add_option("-O", "--output-path",
 						type="string",
 						default="./VisualDiff/capture/Screens",
-						help=optparse.SUPPRESS_HELP)
+						help="Save files to Screens folder, defaults to ./VisualDiff/capture/Screens")
 	cmdparser.add_option("-S", "--sitemap",
+						type="string",
+						help="Crawl Google sitemap, <url><loc>http://</loc></url>")
+	cmdparser.add_option("-U", "--url",
 						type="string",
 						help=optparse.SUPPRESS_HELP)
 	cmdparser.add_option("-L", "--levels", type="int",
 						default=5,
-						help=optparse.SUPPRESS_HELP)
+						help="How many url path levels to go down (/en/company/ is on level 2), defaults to 2")
 	cmdparser.add_option("-W", "--width",
 						type="int",
 						default=1280,
-						help=optparse.SUPPRESS_HELP)
+						help="Width of the browser screen, defaults to 1280")
 	
 	(options, args) = cmdparser.parse_args()
 	
 	if not options.output_path:
 		cmdparser.print_usage()
 
-	if not options.sitemap:
+	if len(args) > 0:
+		_url = url.urlparse(args[0])
+		if _url.netloc and __url.scheme:
+			options.url = args[0]
+
+	# If both or none are set, we throw an error
+	if bool(options.sitemap) == bool(options.url):
 		cmdparser.print_usage() 
-		raise RuntimeError("Must specify the URL to the sitemap")
+		raise RuntimeError("Must specify a URL OR sitemap.")
 		
 	# if len(args) == 0:
 	# 	cmdparser.print_usage()
 	# 	raise RuntimeError("Must specify a URL to capture screens from")
 
+def webkit2png(url):
+	global options, args
+	subprocess.call([	"webkit2png",
+						"--dir=%s" % (options.output_path),
+						"-F",
+						"-W " + str(options.width),
+						"--js='var i=0; function scroll(){ i += 600; if (i > document.height) { window.scrollTo(0,0);webkit2png.start() } else { window.scrollTo(0, i); window.setTimeout(scroll, 500)}}; webkit2png.stop(); scroll();'",
+						url
+					])
+	
 def main():
 	global options, args
 	init()
+
+	if(options.url):
+		webkit2png(options.url)
+		return
+
 	dom = minidom.parse(urllib.urlopen(options.sitemap))
 	locations = dom.getElementsByTagName('loc')
 	urls = []
@@ -74,13 +91,7 @@ def main():
 	##urls = ['http://www.integration.native-instruments.de/de/products/komplete/effects/premium-tube-series/']
 
 	for url in urls:
-		subprocess.call([	"webkit2png",
-							"--dir=%s" % (options.output_path),
-							"-F",
-							"-W " + str(options.width),
-							"--js='var i=0; function scroll(){ i += 600; if (i > document.height) { window.scrollTo(0,0);webkit2png.start() } else { window.scrollTo(0, i); window.setTimeout(scroll, 500)}}; webkit2png.stop(); scroll();'",
-							url
-						])
+		webkit2png(url)
 
 
 if __name__ == '__main__':
