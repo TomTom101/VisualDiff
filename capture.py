@@ -17,17 +17,17 @@ def init():
 	usage = """%prog [options] [http://example.net/ ...]
 
 	Examples:
-	%prog http://www.ni.de/            	# screengrab the live site (not supported yet)
-	%prog -S --site-map		# Crawl Google sitemap, <url><loc>http://</loc></url>
-	%prog -O --output-path	# Save files to Screens folder, defaults to ~/
-	%prog -W --width		# width of the browser screen, defaults to 1280
-	%prog -L --levels		# How many url path levels to go down (/en/company/ is on level 2), defaults to 2"""
+	%prog http://www.native-instruments.com/   	# screengrab the live site (not supported yet)
+	%prog -S --site-map							# Crawl Google sitemap, <url><loc>http://</loc></url>
+	%prog -O --output-path						# Save files to Screens folder, defaults to ~/
+	%prog -W --width							# width of the browser screen, defaults to 1280
+	%prog -L --levels							# How many url path levels to go down (/en/company/ is on level 2), defaults to 2
+	%prog -O ~/Screens/ -W 1600 -S http://www.native-instruments.de/en/sitemap/"""
 
 	cmdparser = optparse.OptionParser(usage, version=("capture " + __version__))
 
 	cmdparser.add_option("-O", "--output-path",
 						type="string",
-						default=path.expanduser("~"),
 						help=optparse.SUPPRESS_HELP)
 	cmdparser.add_option("-S", "--sitemap",
 						type="string",
@@ -39,8 +39,13 @@ def init():
 						type="int",
 						default=1280,
 						help=optparse.SUPPRESS_HELP)
-
+	
 	(options, args) = cmdparser.parse_args()
+	
+	if not options.output_path:
+		cmdparser.print_usage() 
+		raise RuntimeError("Must specify an output path")
+		
 	# if len(args) == 0:
 	# 	cmdparser.print_usage()
 	# 	raise RuntimeError("Must specify a URL to capture screens from")
@@ -76,4 +81,3 @@ def main():
 
 if __name__ == '__main__':
 	main()
-	

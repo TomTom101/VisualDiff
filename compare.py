@@ -2,18 +2,42 @@
 
 import os, glob
 from time import sleep
+import optparse
 from SimpleCV import *
 
-base_images_path = os.path.expanduser('~')
-current_images_path = base_images_path + '/Google Drive/Screens'
-previous_images_path = base_images_path + '/Google Drive/Screens pre migration'
-mismatch_images_path = current_images_path + '/Mismatches'
+__version__ = "0.1"
 
-scale_factor = .75
-border_width = int(5 ** scale_factor)
+options = {}
+args = []
 
 mismatch = []
 
+def init():
+	global options, args
+	usage = """%prog [options] [http://example.net/ ...]
+
+	Examples:
+	%prog ~/Screens-A/ ~/Screens-B/           	# compare folder Screens-A to Screens-B
+	%prog -S --scale		# Crawl Google sitemap, <url><loc>http://</loc></url>
+	%prog -O --output-path	# Save files to specified folder, defaults to ./Screens-Mismatch"""
+
+	cmdparser = optparse.OptionParser(usage, version=("capture " + __version__))
+
+	cmdparser.add_option("-O", "--output-path",
+						type="string",
+						default="./Screens-Mismatch",
+						help=optparse.SUPPRESS_HELP)
+	cmdparser.add_option("-S", "--scale",
+						type="float",
+						default=0.75,
+						help=optparse.SUPPRESS_HELP)
+
+	(options, args) = cmdparser.parse_args()
+	if len(args) != 2:
+	 	cmdparser.print_usage()
+	 	raise RuntimeError("Must define 2 folders to compare!")
+
+	print args, options
 
 def mask(imgA, imgB):
 	tmp = (imgB - imgA)
@@ -21,12 +45,12 @@ def mask(imgA, imgB):
 
 def openImage(img):
 	try:
-		_img = Image(img).scale(scale_factor)
+		_img = Image(img)
 		return _img
 	except cv2.error as e:
 		print "Error opening image: %s" % cv2.error
 
-def markBlobs(img, color=Color.RED):
+def markBlobs(img, border_width, color=Color.RED):
 	# thresh 5 filters tiny changes we don't care about
 	# max and minsize is by trial
 	blobs = img.binarize(thresh=5).invert().findBlobs(
@@ -39,51 +63,60 @@ def markBlobs(img, color=Color.RED):
 	# merge the drawing layer on the image. Otherwise drawings get lost when changing the source image in any way
 	return img.applyLayers()
 
-for current_image_path in glob.glob('%s/*.png' % current_images_path):
-	current_image_name = os.path.basename(current_image_path)
-	previous_image_path = '%s/%s' % (previous_images_path, current_image_name)
+def main():
+	global options, args
+	init()
+	border_width = int(5 ** options.scale)
 
-	if (os.path.isfile(previous_image_path)):
-		print "opening current  %s..." % previous_image_path
-		imgA = openImage(current_image_path).scale(scale_factor)
-		print "opening previous ..."
-		imgB = openImage(previous_image_path).scale(scale_factor)
-		if imgA.width != imgB.width:
-			# Not sure why this happened, screenshots are taken at a defined width of 1600px
-			print "Width does not match! Continuing ..."
-			continue
-		print "comparing ..."
-		try:
-			imgD = mask(imgB, imgA)
-		except cv2.error as e:
-			print "Error comparing image: %s" % cv2.error
-			mismatch.append(current_image_name)
-		finally:
-			# when the images are not the same size, image arithmetric (adding, subtracting) does not work
-			# before we can compare them, they need the same image dimensions.
-			diff_height = imgA.height - imgB.height
-			if diff_height < 0:
-				imgA = imgA.embiggen((imgA.width, imgB.height), Color.BLACK, (0,0))
-			elif diff_height > 0:
-				imgB = imgB.embiggen((imgA.width, imgA.height), Color.BLACK, (0,0))
-			# now try again to find the differences
-			imgD = mask(imgB, imgA)
+	for current_image_path in glob.glob('%s/*.png' % args[0]):
+		current_image_name = os.path.basename(current_image_path)
+		previous_image_path = '%s/%s' % (args[1], current_image_name)
 
-		# Substract A from B, then B from A and add them. This way, we can also see black areas
-		# that were added/removed
-		imgD = markBlobs(imgD, Color.RED)
-		imgE = markBlobs((imgA.invert() - imgB.invert()), Color.GREEN)
-		imgX = imgD + imgE
+		if (os.path.isfile(previous_image_path)):
+			print "opening current  %s..." % previous_image_path
+			imgA = openImage(current_image_path).scale(options.scale)
+			print "opening previous ..."
+			imgB = openImage(previous_image_path).scale(options.scale)
+			if imgA.width != imgB.width:
+				# Not sure why this happened, screenshots are taken at a defined width of 1600px
+				print "Width does not match! Continuing ..."
+				continue
+			print "comparing ..."
+			try:
+				imgD = mask(imgB, imgA)
+			except cv2.error as e:
+				print "Error comparing image: %s" % cv2.error
+				mismatch.append(current_image_name)
+			finally:
+				# when the images are not the same size, image arithmetric (adding, subtracting) does not work
+				# before we can compare them, they need the same image dimensions.
+				diff_height = imgA.height - imgB.height
+				if diff_height < 0:
+					print imgA.width, imgB.height
+					imgA = imgA.embiggen((imgA.width, imgB.height), Color.BLACK, (0,0))
+				elif diff_height > 0:
+					print imgA.width, imgA.height
+					imgB = imgB.embiggen((imgA.width, imgA.height), Color.BLACK, (0,0))
+				# now try again to find the differences
+				imgD = mask(imgB, imgA)
 
-		matrix = imgD.getNumpy()
-		mean = matrix.mean()
+			# Substract A from B, then B from A and add them. This way, we can also see black areas
+			# that were added/removed
+			imgD = markBlobs(imgD, border_width, Color.GREEN)
+			imgE = markBlobs((imgA.invert() - imgB.invert()), border_width, Color.RED)
+			imgX = imgD + imgE
 
-		if mean > 0.0:
-			mismatch.append(current_image_name)
-			imgB.sideBySide(imgA) \
-			.sideBySide(imgX) \
-			.save('%s/%s.%s' % (mismatch_images_path, current_image_name[:-4], 'jpg'))
-		print mean
+			matrix = imgD.getNumpy()
+			mean = matrix.mean()
 
-print mismatch
+			if mean > 0.0:
+				mismatch.append(current_image_name)
+				imgB.sideBySide(imgA) \
+				.sideBySide(imgX) \
+				.save('%s/%s.%s' % (options.output_path, current_image_name[:-4], 'jpg'))
+			print mean
 
+	print mismatch
+
+if __name__ == '__main__':
+	main()
