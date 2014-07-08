@@ -30,6 +30,10 @@ def init():
 	cmdparser.add_option("-U", "--url",
 						type="string",
 						help=optparse.SUPPRESS_HELP)
+	cmdparser.add_option("-J", "--js",
+						type="string",
+						default="./init.js",
+						help=optparse.SUPPRESS_HELP)	
 	cmdparser.add_option("-L", "--levels", type="int",
 						default=5,
 						help="How many url path levels to go down (/en/company/ is on level 2), defaults to 2")
@@ -48,12 +52,17 @@ def init():
 		if _url.netloc and _url.scheme:
 			options.url = args[0]
 
+	if options.js:
+		with open (options.js, "r") as _file:
+			options.js = re.sub(r"([\n\t]+|\s{2,})", '', _file.read())
+
 	# If both or none are set, we throw an error
 	if bool(options.sitemap) == bool(options.url):
 		print("Must specify a URL OR sitemap.")
 		cmdparser.print_usage() 
 		sys.exit(0)
-		
+
+	print options
 	# if len(args) == 0:
 	# 	cmdparser.print_usage()
 	# 	raise RuntimeError("Must specify a URL to capture screens from")
@@ -64,7 +73,7 @@ def webkit2png(url, options):
 						"-F",
 						"--filename=%s" % (options.filename),
 						"-W " + str(options.width),
-						"--js='var i=0; function scroll(){ i += 600; if (i > document.height) { window.scrollTo(0,0);webkit2png.start() } else { window.scrollTo(0, i); window.setTimeout(scroll, 500)}}; webkit2png.stop(); scroll();'",
+						"--js='%s'" % (options.js),
 						url
 					]
 	subprocess.call(parameters)
@@ -82,7 +91,6 @@ def main():
 	if(options.url):
 		(options.filename, host) = makeFilename(options.url)
 		options.output_path = base_output_path + '/' + host
-		print options
 		webkit2png(options.url, options)
 		return
 	try:
