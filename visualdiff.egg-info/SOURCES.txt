@@ -1,6 +1,6 @@
-capture.py
-compare.py
 setup.py
+vd-capture
+vd-compare
 visualdiff.egg-info/PKG-INFO
 visualdiff.egg-info/SOURCES.txt
 visualdiff.egg-info/dependency_links.txt
