@@ -62,11 +62,6 @@ def init():
 		cmdparser.print_usage() 
 		sys.exit(0)
 
-	print options
-	# if len(args) == 0:
-	# 	cmdparser.print_usage()
-	# 	raise RuntimeError("Must specify a URL to capture screens from")
-
 def webkit2png(url, options):
 	parameters = [	"webkit2png",
 						"--dir=%s" % (options.output_path),
@@ -80,7 +75,7 @@ def webkit2png(url, options):
 	
 def makeFilename(url):
 	_url = urlparse.urlparse(url)
-	return (re.sub('/', '', _url.path or 'index'), _url.netloc)
+	return (re.sub('\W', '', _url.path or 'index'), _url.netloc)
 
 def main():
 	global options, args
