@@ -39,6 +39,9 @@ def init():
 	 	print("You must define 2 folders to compare!")
 		sys.exit(0)
 
+	if options.output_path[0] == '~':
+		options.output_path = os.path.expanduser(options.output_path)
+
 	if not os.path.exists(options.output_path):
 		os.makedirs(options.output_path)
 		if not os.access(options.output_path, os.W_OK):
@@ -79,7 +82,7 @@ def main():
 		previous_image_path = '%s/%s' % (args[1], current_image_name)
 
 		if (os.path.isfile(previous_image_path)):
-			print "opening current  %s..." % current_image_name
+			print "opening %s" % current_image_name
 			imgA = openImage(current_image_path).scale(options.scale)
 			print "opening previous ..."
 			imgB = openImage(previous_image_path).scale(options.scale)
@@ -88,23 +91,17 @@ def main():
 				print "Width does not match! Continuing ..."
 				continue
 			print "comparing ..."
-			try:
-				imgD = mask(imgB, imgA)
-			except cv2.error as e:
-				print "Error comparing image: %s" % cv2.error
-				mismatch.append(current_image_name)
-			finally:
+
+			if (imgA.height - imgB.height) != 0:
 				# when the images are not the same size, image arithmetric (adding, subtracting) does not work
 				# before we can compare them, they need the same image dimensions.
 				diff_height = imgA.height - imgB.height
 				if diff_height < 0:
-					print imgA.width, imgB.height
 					imgA = imgA.embiggen((imgA.width, imgB.height), Color.BLACK, (0,0))
 				elif diff_height > 0:
-					print imgA.width, imgA.height
 					imgB = imgB.embiggen((imgA.width, imgA.height), Color.BLACK, (0,0))
 				# now try again to find the differences
-				imgD = mask(imgB, imgA)
+			imgD = mask(imgB, imgA)
 
 			# Substract A from B, then B from A and add them. This way, we can also see black areas
 			# that were added/removed
@@ -114,12 +111,13 @@ def main():
 
 			matrix = imgD.getNumpy()
 			mean = matrix.mean()
-
+			# image.getPIL().save('/Users/thomasbrandl/VisualDiff/compare/mismatches/en-full-80.jpg', quality=10, optimize=True, progressive=True)
 			if mean > 0.0:
 				mismatch.append(current_image_name)
 				imgB.sideBySide(imgA) \
 				.sideBySide(imgX) \
-				.save('%s/%s.%s' % (options.output_path, current_image_name[:-4], 'jpg'))
+				.getPIL().save('%s/%s.%s' % (options.output_path, current_image_name[:-4], 'jpg'),
+					quality=85, optimize=True, progressive=True)
 			print mean
 
 	print mismatch
