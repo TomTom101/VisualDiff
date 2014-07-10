@@ -7,61 +7,58 @@ import urllib
 from xml.dom import minidom
 import re
 import subprocess
-import optparse
+import argparse
 import urlparse
 
 __version__ = "0.1"
 
 options = {}
-args = []
 
 def init():
-	global options, args
-	usage = "%prog [options] [http://example.net/ ...]"
+	global options
+	usage = "%prog [options] --single-url http://example.net/index.html OR --sitemap http://example.com/sitemap.xml"
 
-	cmdparser = optparse.OptionParser(usage, version=("capture " + __version__))
+	cmdparser = argparse.ArgumentParser(prog=__file__)
 
-	cmdparser.add_option("-O", "--output-path",
-						type="string",
+	cmdparser.add_argument("-U", "--single-url",
+						help="The path to the latest screens")
+
+	cmdparser.add_argument("-O", "--output-path",
 						default="./VisualDiff/capture/Screens",
 						help="Save files to Screens folder, defaults to ./VisualDiff/capture/Screens")
-	cmdparser.add_option("-S", "--sitemap",
-						type="string",
+	cmdparser.add_argument("-S", "--sitemap",
 						help="Crawl Google sitemap, <url><loc>http://</loc></url>")
-	cmdparser.add_option("-U", "--url",
-						type="string",
-						help=optparse.SUPPRESS_HELP)
-	cmdparser.add_option("-J", "--js",
-						type="string",
+	cmdparser.add_argument("-J", "--js",
 						default=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'init.js'),
-						help=optparse.SUPPRESS_HELP)	
-	cmdparser.add_option("-L", "--levels", type="int",
+						help=argparse.SUPPRESS)	
+	cmdparser.add_argument("-L", "--levels",
+						type=int,
 						default=5,
 						help="How many url path levels to go down (/en/company/ is on level 2), defaults to 2")
-	cmdparser.add_option("-W", "--width",
-						type="int",
+	cmdparser.add_argument("-W", "--width",
+						type=int,
 						default=1280,
 						help="Width of the browser screen, defaults to 1280")
 	
-	(options, args) = cmdparser.parse_args()
+	options = cmdparser.parse_args()
 
-	if not options.output_path:
-		cmdparser.print_usage()
-
-	if len(args) > 0:
-		_url = urlparse.urlparse(args[0])
-		if _url.netloc and _url.scheme:
-			options.url = args[0]
+	if options.single_url:
+		_url = urlparse.urlparse(options.single_url)
+		if not _url.netloc or not _url.scheme:
+			argparse.print_help()
+			sys.exit(0)
+			
 
 	if options.js:
 		with open (options.js, "r") as _file:
 			options.js = re.sub(r"([\n\t]+|\s{2,})", '', _file.read())
 
 	# If both or none are set, we throw an error
-	if bool(options.sitemap) == bool(options.url):
+	if bool(options.sitemap) == bool(options.single_url):
 		print("Must specify a URL OR sitemap.")
 		cmdparser.print_usage() 
 		sys.exit(0)
+
 
 def webkit2png(url, options):
 	parameters = [	"webkit2png",
@@ -79,16 +76,16 @@ def makeFilename(url):
 	return (re.sub('\W', '', _url.path or 'index'), _url.netloc)
 
 def main():
-	global options, args
+	global options
 	init()
 
 	base_output_path = options.output_path
 
-	if(options.url):
-		(options.filename, subdir) = makeFilename(options.url)
+	if(options.single_url):
+		(options.filename, subdir) = makeFilename(options.single_url)
 		options.output_path = '%s/%s/%s' % (base_output_path, subdir, datetime.date.today())
 		# webkit2png will create the path if it does not exist
-		webkit2png(options.url, options)
+		webkit2png(options.single_url, options)
 		return
 	try:
 		dom = minidom.parse(urllib.urlopen(options.sitemap))

@@ -2,7 +2,7 @@
 
 import sys, os, glob
 from time import sleep
-import optparse
+import argparse
 from SimpleCV import *
 
 __version__ = "0.1"
@@ -13,7 +13,7 @@ args = []
 mismatch = []
 
 def init():
-	global options, args
+	global options
 	usage = """%prog [options] ~/Screens/current ~/Screens/previous
 
 	Creates a composite of current screen (left), previous screen (center) and difference (right). 
@@ -24,30 +24,33 @@ def init():
 	%prog -S --scale		# Crawl Google sitemap, <url><loc>http://</loc></url>
 	%prog -O --output-path	# Save files to specified folder, defaults to ./VisualDiff/compare/mismatches"""
 
-	cmdparser = optparse.OptionParser(usage, version=("capture " + __version__))
+	cmdparser = argparse.ArgumentParser(prog=__file__)
 
-	cmdparser.add_option("-O", "--output-path",
-						type="string",
+	cmdparser.add_argument("current_image_path",
+						help="Specify the folder with the latest screens")
+	cmdparser.add_argument("-?",
+						help="""Creates a composite of current screen (left), previous screen (center) and difference (right). 
+	Areas marked green were added, those marked red removed.""")	
+	cmdparser.add_argument("previous_image_path",
+						help="Specify the folder to compare the current ones to")
+	cmdparser.add_argument("-O", "--output-path",
 						default="./VisualDiff/compare/mismatches",
-						help=optparse.SUPPRESS_HELP)
-	cmdparser.add_option("-S", "--scale",
-						type="float",
+						help="Specify a folder to save the difference images. Will be put in a subfolder automatically, '.' is fine")
+	cmdparser.add_argument("-S", "--scale",
+						type=float,
 						default=0.75,
-						help=optparse.SUPPRESS_HELP)
+						help=argparse.SUPPRESS)
 
-	(options, args) = cmdparser.parse_args()
-
-	if len(args) != 2:
-	 	cmdparser.print_usage()
-	 	print("You must define 2 folders to compare!")
-		sys.exit(0)
+	options = cmdparser.parse_args()
 
 	if options.output_path[0] == '~':
 		options.output_path = os.path.expanduser(options.output_path)
 
 	# create a subfolder stating what we compared
 	options.output_path = os.path.join(	options.output_path,
-										"%s-vs-%s" % (os.path.basename(os.path.normpath(args[0])), os.path.basename(os.path.normpath(args[1])))
+										"%s-vs-%s" % (	os.path.basename(os.path.normpath(options.current_image_path)),
+														os.path.basename(os.path.normpath(options.previous_image_path))
+													)
 									)
 
 	if not os.path.exists(options.output_path):
@@ -81,13 +84,13 @@ def markBlobs(img, border_width, color=Color.RED):
 	return img.applyLayers()
 
 def main():
-	global options, args
+	global options
 	init()
 	border_width = int(5 ** options.scale)
 
-	for current_image_path in glob.glob('%s/*.png' % args[0]):
+	for current_image_path in glob.glob('%s/*.png' % options.current_image_path):
 		current_image_name = os.path.basename(current_image_path)
-		previous_image_path = '%s/%s' % (args[1], current_image_name)
+		previous_image_path = '%s/%s' % (options.previous_image_path, current_image_name)
 
 		if (os.path.isfile(previous_image_path)):
 			print "opening %s" % current_image_name
