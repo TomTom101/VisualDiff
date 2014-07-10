@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import sys
-from os import path
+import os
 import datetime
 import urllib
 from xml.dom import minidom
@@ -33,7 +33,7 @@ def init():
 						help=optparse.SUPPRESS_HELP)
 	cmdparser.add_option("-J", "--js",
 						type="string",
-						default="./init.js",
+						default=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'init.js'),
 						help=optparse.SUPPRESS_HELP)	
 	cmdparser.add_option("-L", "--levels", type="int",
 						default=5,
@@ -44,7 +44,7 @@ def init():
 						help="Width of the browser screen, defaults to 1280")
 	
 	(options, args) = cmdparser.parse_args()
-	
+
 	if not options.output_path:
 		cmdparser.print_usage()
 
