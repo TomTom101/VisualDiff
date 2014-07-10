@@ -14,10 +14,13 @@ mismatch = []
 
 def init():
 	global options, args
-	usage = """%prog [options] ~/Screens-A ~/Screens-B
+	usage = """%prog [options] ~/Screens/current ~/Screens/previous
+
+	Creates a composite of current screen (left), previous screen (center) and difference (right). 
+	Areas marked green were added, those marked red removed.
 
 	Examples:
-	%prog ~/Screens-A/ ~/Screens-B/           	# compare folder Screens-A to Screens-B
+	%prog ~/Screens/current ~/Screens/previous          	# compare folder Screens/current to Screens/previous 
 	%prog -S --scale		# Crawl Google sitemap, <url><loc>http://</loc></url>
 	%prog -O --output-path	# Save files to specified folder, defaults to ./VisualDiff/compare/mismatches"""
 
@@ -41,6 +44,11 @@ def init():
 
 	if options.output_path[0] == '~':
 		options.output_path = os.path.expanduser(options.output_path)
+
+	# create a subfolder stating what we compared
+	options.output_path = os.path.join(	options.output_path,
+										"%s-vs-%s" % (os.path.basename(os.path.normpath(args[0])), os.path.basename(os.path.normpath(args[1])))
+									)
 
 	if not os.path.exists(options.output_path):
 		os.makedirs(options.output_path)
@@ -105,16 +113,15 @@ def main():
 
 			# Substract A from B, then B from A and add them. This way, we can also see black areas
 			# that were added/removed
-			imgD = markBlobs(imgD, border_width, Color.GREEN)
-			imgE = markBlobs((imgA.invert() - imgB.invert()), border_width, Color.RED)
+			imgD = markBlobs(imgD, border_width, Color.RED)
+			imgE = markBlobs((imgA.invert() - imgB.invert()), border_width, Color.GREEN)
 			imgX = imgD + imgE
 
-			matrix = imgD.getNumpy()
-			mean = matrix.mean()
-			# image.getPIL().save('/Users/thomasbrandl/VisualDiff/compare/mismatches/en-full-80.jpg', quality=10, optimize=True, progressive=True)
+			mean = imgD.getNumpy().mean()
+
 			if mean > 0.0:
 				mismatch.append(current_image_name)
-				imgB.sideBySide(imgA) \
+				imgA.sideBySide(imgB) \
 				.sideBySide(imgX) \
 				.getPIL().save('%s/%s.%s' % (options.output_path, current_image_name[:-4], 'jpg'),
 					quality=85, optimize=True, progressive=True)
