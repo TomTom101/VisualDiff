@@ -101,16 +101,17 @@ def main():
 		url = node.childNodes[0].nodeValue
 		# only capture pages options.levels down (no subpages)
 		# de/ products/ komplete/ effects/ vintage-compressors/ = 5
-		# won't find pages
+		# won't find pages below this level
 		reg = r"\.[a-z]{2,3}/([^/]+/){,%d}$" % options.levels
 		if re.search(reg, url):
 	 		urls.append(url)
-	print "Capturing %d urls form sitemap" % len(urls)
+	print "Capturing %d of %d urls from sitemap" % (len(urls), len(locations))
 
 	for url in urls:
 		(options.filename, subdir) = makeFilename(url)
 		options.output_path = '%s/%s/%s' % (base_output_path, subdir, datetime.date.today())
 		webkit2png(url, options)
+		
 
 
 if __name__ == '__main__':
