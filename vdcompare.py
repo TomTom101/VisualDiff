@@ -14,23 +14,11 @@ mismatch = []
 
 def init():
 	global options
-	usage = """%prog [options] ~/Screens/current ~/Screens/previous
-
-	Creates a composite of current screen (left), previous screen (center) and difference (right). 
-	Areas marked green were added, those marked red removed.
-
-	Examples:
-	%prog ~/Screens/current ~/Screens/previous          	# compare folder Screens/current to Screens/previous 
-	%prog -S --scale		# Crawl Google sitemap, <url><loc>http://</loc></url>
-	%prog -O --output-path	# Save files to specified folder, defaults to ./VisualDiff/compare/mismatches"""
 
 	cmdparser = argparse.ArgumentParser(prog=__file__)
 
 	cmdparser.add_argument("current_image_path",
 						help="Specify the folder with the latest screens")
-	cmdparser.add_argument("-?",
-						help="""Creates a composite of current screen (left), previous screen (center) and difference (right). 
-	Areas marked green were added, those marked red removed.""")	
 	cmdparser.add_argument("previous_image_path",
 						help="Specify the folder to compare the current ones to")
 	cmdparser.add_argument("-O", "--output-path",

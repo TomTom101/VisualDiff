@@ -16,7 +16,6 @@ options = {}
 
 def init():
 	global options
-	usage = "%prog [options] --single-url http://example.net/index.html OR --sitemap http://example.com/sitemap.xml"
 
 	cmdparser = argparse.ArgumentParser(prog=__file__)
 
@@ -26,6 +25,8 @@ def init():
 	cmdparser.add_argument("-O", "--output-path",
 						default="./VisualDiff/capture/Screens",
 						help="Save files to Screens folder, defaults to ./VisualDiff/capture/Screens")
+	cmdparser.add_argument("-P", "--sub-path",
+						help="Save files to Screens folder, defaults to ./VisualDiff/capture/Screens")	
 	cmdparser.add_argument("-S", "--sitemap",
 						help="Crawl Google sitemap, <url><loc>http://</loc></url>")
 	cmdparser.add_argument("-J", "--js",
@@ -71,9 +72,15 @@ def webkit2png(url, options):
 					]
 	subprocess.call(parameters)
 	
-def makeFilename(url):
+def makeFilepath(url, options):
+	""" returns an array ([path], [filename]) """
 	_url = urlparse.urlparse(url)
-	return (re.sub('\W', '', _url.path or 'index'), _url.netloc)
+	pathparts = []
+	pathparts.append(options.output_path)
+	pathparts.append(_url.netloc)
+	pathparts.append(str(datetime.date.today()))
+
+	return (os.path.join(*pathparts), re.sub('\W', '', _url.path or 'index'))
 
 def main():
 	global options
@@ -82,6 +89,7 @@ def main():
 	base_output_path = options.output_path
 
 	if(options.single_url):
+		# duplicate code below
 		(options.filename, subdir) = makeFilename(options.single_url)
 		options.output_path = '%s/%s/%s' % (base_output_path, subdir, datetime.date.today())
 		# webkit2png will create the path if it does not exist
@@ -108,8 +116,7 @@ def main():
 	print "Capturing %d of %d urls from sitemap" % (len(urls), len(locations))
 
 	for url in urls:
-		(options.filename, subdir) = makeFilename(url)
-		options.output_path = '%s/%s/%s' % (base_output_path, subdir, datetime.date.today())
+		(options.output_path, options.filename) = makeFilepath(url, options)
 		webkit2png(url, options)
 		
 

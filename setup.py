@@ -10,7 +10,7 @@ config = {
     'download_url': 'https://github.com/TomTom101/VisualDiff',
     'author_email': 'thomas.brandl@native-instruments.de',
     'version': '0.1',
-    'scripts': ['vd-capture', 'vd-compare'],
+    'scripts': ['vdcapture.py', 'vdcompare.py'],
     'name': 'visualdiff'
 }
 
