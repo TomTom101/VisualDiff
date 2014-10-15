@@ -122,3 +122,4 @@ def main():
 
 if __name__ == '__main__':
 	main()
+	subprocess.call(["open", "-R", options.output_path])
