@@ -26,7 +26,7 @@ def init():
 						default="./VisualDiff/capture/Screens",
 						help="Save files to Screens folder, defaults to ./VisualDiff/capture/Screens")
 	cmdparser.add_argument("-P", "--sub-path",
-						help="Save files to Screens folder, defaults to ./VisualDiff/capture/Screens")	
+						help="Subfolder to save shots in. If none specified, the current date is used as sub folder name.")	
 	cmdparser.add_argument("-S", "--sitemap",
 						help="Crawl Google sitemap, <url><loc>http://</loc></url>")
 	cmdparser.add_argument("-J", "--js",
@@ -78,7 +78,7 @@ def makeFilepath(url, options):
 	pathparts = []
 	pathparts.append(options.output_path)
 	pathparts.append(_url.netloc)
-	pathparts.append(str(datetime.date.today()))
+	pathparts.append(options.sub_path if options.sub_path else str(datetime.date.today()))
 
 	return (os.path.join(*pathparts), re.sub('\W', '', _url.path or 'index'))
 
@@ -89,9 +89,8 @@ def main():
 	base_output_path = options.output_path
 
 	if(options.single_url):
-		# duplicate code below
-		(options.filename, subdir) = makeFilename(options.single_url)
-		options.output_path = '%s/%s/%s' % (base_output_path, subdir, datetime.date.today())
+		(options.output_path, options.filename) = makeFilepath(options.single_url, options)
+
 		# webkit2png will create the path if it does not exist
 		webkit2png(options.single_url, options)
 		return
